@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LuxeStay | Search & 3D Portal</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #a855f7;
+            --bg: #0f172a;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --text: #f8fafc;
+            --accent: #4ade80;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+        body {
+            background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 2rem;
+            overflow-x: hidden;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        /* --- Keyframes --- */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(168, 85, 247, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0); }
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 2.5rem;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        h1 { font-size: 3rem; background: linear-gradient(to right, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        /* --- Search Bar Styling --- */
+        .search-container {
+            margin-bottom: 2rem;
+            animation: fadeInUp 0.7s ease-out;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 16px 25px;
+            border-radius: 50px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: 0.3s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .search-input:focus {
+            background: rgba(255,255,255,0.1);
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+        }
+
+        /* --- Creative Form Update --- */
+        .hotel-form {
+            background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+            padding: 40px;
+            border-radius: 30px;
+            margin-bottom: 3rem;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .form-group { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+        }
+
+        /* Image URL spanning full width and becoming "Paragraph Size" */
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label { 
+            font-size: 0.75rem; 
+            color: var(--primary); 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            letter-spacing: 1px;
+            margin-left: 5px;
+        }
+
+        input, select, textarea {
+            padding: 14px 18px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(15, 23, 42, 0.6);
+            color: white;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        /* Textarea specific styling for "Paragraph" feel */
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+            line-height: 1.6;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--secondary);
+            background: rgba(15, 23, 42, 0.9);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .btn-submit {
+            grid-column: 1 / -1;
+            padding: 18px;
+            border-radius: 15px;
+            border: none;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: 0.4s;
+            margin-top: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .btn-submit:hover { 
+            transform: scale(1.01); 
+            filter: brightness(1.2); 
+            box-shadow: 0 0 30px rgba(168, 85, 247, 0.4);
+        }
+
+        .edit-mode-active {
+            border-color: var(--secondary);
+            animation: pulse 2s infinite;
+        }
+
+        /* --- Grid & Cards --- */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px; }
+
+        .hotel-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: fadeInUp 0.5s ease forwards;
+        }
+
+        .hotel-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--primary);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+        }
+
+        .hotel-image { width: 100%; height: 200px; object-fit: cover; }
+        .card-content { padding: 20px; }
+        .price-tag { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+        .actions { display: flex; gap: 10px; margin-top: 15px; }
+
+        .btn-action { flex: 1; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 600; border: 1px solid transparent; transition: 0.2s; }
+        .btn-edit { background: rgba(99, 102, 241, 0.1); border-color: var(--primary); color: var(--primary); }
+        .btn-edit:hover { background: var(--primary); color: white; }
+        .btn-delete { background: rgba(239, 68, 68, 0.1); border-color: #ef4444; color: #ef4444; }
+        .btn-delete:hover { background: #ef4444; color: white; }
+
+        .badge { display: inline-block; padding: 5px 12px; border-radius: 50px; font-size: 0.7rem; font-weight: 700; margin-bottom: 8px; border: 1px solid; }
+        .veg { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+        .non-veg { background: rgba(244, 63, 94, 0.1); color: #f43f5e; }
+
+        @media (max-width: 768px) {
+            .hotel-form { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+
+        <div>
+            <h1>✨ LuxeStay Explorer</h1>
+            <p>Premium Real Estate & Hotel Management</p>
+        </div>
+
+        <div id="userPanel" style="display:flex; gap:10px; align-items:center;">
+            
+            <span id="welcomeUser" style="display:none; font-weight:600;"></span>
+
+           <button id="loginBtn" onclick="window.location.href='/login'"
+            style="padding:8px 14px;border:none;border-radius:8px;background:#6366f1;color:white;cursor:pointer;">
+            Login
+            </button>
+
+           <button id="registerBtn" onclick="window.location.href='/register'"
+            style="padding:8px 14px;border:none;border-radius:8px;background:#a855f7;color:white;cursor:pointer;">
+            Register
+            </button>
+
+            <button id="logoutBtn" onclick="logoutUser()" 
+            style="display:none;padding:8px 14px;border:none;border-radius:8px;background:#ef4444;color:white;cursor:pointer;">
+            Logout
+            </button>
+
+            <button id="adminBtn" onclick="window.location.href='/admin'"
+style="display:none;padding:8px 14px;border:none;border-radius:8px;background:#ef4444;color:white;cursor:pointer;">
+Admin Panel
+</button>
+
+        </div>
+
+    </div>
+</header>
+            <div class="search-container">
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search by hotel name or location..." onkeyup="filterHotels()">
+    </div>
+    <div id="addFormSection">
+    <div class="hotel-form" id="hotelForm">
+        <div class="form-group">
+            <label>Name</label>
+            <input type="text" id="name" placeholder="Grand Plaza">
+        </div>
+        <div class="form-group">
+            <label>Location</label>
+            <input type="text" id="location" placeholder="Mumbai, IN">
+        </div>
+        <div class="form-group">
+            <label>Price (₹)</label>
+            <input type="number" id="prices" placeholder="8000">
+        </div>
+        <div class="form-group">
+            <label>Dietary</label>
+            <select id="is_veg">
+                <option value="true">🌿 Pure Veg</option>
+                <option value="false">🍖 Non-Veg</option>
+            </select>
+        </div>
+        <div class="form-group full-width">
+    <label>Image Gallery URLs (One per line or comma-separated)</label>
+
+    <textarea id="images" placeholder="https://example.com/image1.jpg,
+https://example.com/image2.jpg"></textarea>
+
+    <small style="color:#94a3b8; font-size:12px; margin-top:4px;">
+        ⚠️ Note: Only direct <b>https image links</b> are allowed. 
+        Example: https://images.unsplash.com/photo-1542314831-068cd1dbfeeb
+    </small>
+</div>
+
+        <button class="btn-submit" id="submitBtn" onclick="handleFormSubmit()">✨ Add New Hotel</button>
+        <p style="grid-column: 1/-1; text-align: center; color: #ef4444; cursor: pointer; display: none; font-weight: bold; font-size: 0.8rem;" id="cancelBtn" onclick="resetForm()">[ Cancel Editing ]</p>
+    </div>
+</div>
+
+    <div id="hotel-grid" class="grid"></div>
+</div>
+</div>
+
+<script>
+
+const API_URL = 'http://127.0.0.1:5000/api/hotels';
+let token = localStorage.getItem("token");
+
+
+console.log("Token being sent:", token);
+const authHeader = token ? {
+    headers: { Authorization: "Bearer " + token }
+} : {};
+
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+    const username = localStorage.getItem("username");
+
+    const welcomeUser = document.getElementById("welcomeUser");
+    const loginBtn = document.getElementById("loginBtn");
+    const registerBtn = document.getElementById("registerBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    if (token) {
+
+        welcomeUser.style.display = "inline";
+        welcomeUser.innerText = "👋 " + (username || "User");
+
+        loginBtn.style.display = "none";
+        registerBtn.style.display = "none";
+        logoutBtn.style.display = "inline";
+if (role === "admin") {
+    document.getElementById("adminBtn").style.display = "inline";
+}
+
+    } else {
+
+        welcomeUser.style.display = "none";
+        logoutBtn.style.display = "none";
+        loginBtn.style.display = "inline";
+        registerBtn.style.display = "inline";
+
+    }
+
+if (!token) {
+        const form = document.getElementById("addFormSection");
+        if (form) form.style.display = "none";
+    }
+
+    fetchHotels();
+});
+// IMAGE HELPER
+function getImageSrc(img) {
+
+    if (!img || typeof img !== "string") return null;
+
+    img = img.trim().replace(/[\[\]"]/g, '');
+
+    if (img.startsWith("data:image")) return img;
+    if (img.startsWith("http://") || img.startsWith("https://")) return img;
+
+    return null;
+}
+
+let allHotels = [];
+let currentEditId = null;
+
+// FETCH HOTELS
+async function fetchHotels() {
+    try {
+        const response = await axios.get(API_URL);
+
+        console.log("Full Response:", response.data);
+
+        if (response.data && response.data.hotels) {
+            allHotels = response.data.hotels;
+        } else {
+            allHotels = [];
+        }
+
+        renderHotels(allHotels);
+
+    } catch (error) {
+        console.error("Error fetching data", error);
+    }
+}
+
+// RENDER HOTELS
+function renderHotels(hotelsToDisplay) {
+
+    const grid = document.getElementById('hotel-grid');
+    if (!grid) return;
+
+    grid.innerHTML = '';
+
+    hotelsToDisplay.forEach((hotel, index) => {
+
+        const defaultImg = "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=500";
+
+        let parsedImages = [];
+
+        try {
+            parsedImages = typeof hotel.images === "string"
+                ? JSON.parse(hotel.images)
+                : hotel.images;
+        } catch {
+            parsedImages = [];
+        }
+
+        if (!Array.isArray(parsedImages)) parsedImages = [];
+
+        parsedImages = parsedImages
+            .map(getImageSrc)
+            .filter(Boolean);
+
+        let finalImage = parsedImages.length ? parsedImages[0] : defaultImg;
+
+        const card = document.createElement('div');
+        let actions = "";
+
+// Logged in user
+if (token) {
+
+    const userId = localStorage.getItem("user_id");
+
+    // Admin OR Owner
+const role = localStorage.getItem("role");
+
+if (role === "admin" || hotel.user_id == userId) {
+            actions = `
+            <button class="btn-action btn-edit" id="edit-${hotel.id}">Edit</button>
+            <button class="btn-action btn-delete" id="delete-${hotel.id}">Remove</button>
+        `;
+    }
+}
+        card.className = 'hotel-card';
+        card.style.animationDelay = `${index * 0.05}s`;
+        card.style.cursor = "pointer";
+
+        card.addEventListener("click", () => {
+            window.location.href = `/hotel/${hotel.id}`;
+        });
+
+        card.innerHTML = `
+            <img src="${finalImage}" class="hotel-image"
+            onerror="this.src='${defaultImg}'">
+
+            <div class="card-content">
+                <span class="badge ${hotel.is_veg ? 'veg' : 'non-veg'}">
+                    ${hotel.is_veg ? 'PURE VEG' : 'NON-VEG'}
+                </span>
+
+                <h3>${hotel.name}</h3>
+
+                <p style="color: #94a3b8; font-size: 0.85rem;">
+                    📍 ${hotel.location || 'Unknown'}
+                </p>
+
+                <div class="price-tag">
+₹${(hotel.prices || hotel.price || 0).toLocaleString()}
+                </div>
+
+               <div class="actions">
+    ${actions}
+</div>
+            </div>
+        `;
+
+        grid.appendChild(card);
+
+        const editBtn = document.getElementById(`edit-${hotel.id}`);
+        if (editBtn) {
+            editBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (!token) {
+                    alert("Login required");
+window.location.href = "/login";
+                    return;
+                }
+                setupEdit(hotel);
+            });
+        }
+
+        const deleteBtn = document.getElementById(`delete-${hotel.id}`);
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                if (!token) {
+                    alert("Login required");
+window.location.href = "/login";
+                    return;
+                }
+
+                if(confirm("Confirm delete?")) {
+                    await axios.delete(`${API_URL}/${hotel.id}`, authHeader);
+                    fetchHotels();
+                }
+            });
+        }
+
+    });
+}
+
+// PARSE IMAGES FROM FORM
+function parseImages(input) {
+    if (!input) return [];
+
+    return input.split(/[\n,]+/)
+                .map(url => url.trim().replace(/["']/g, ""))
+                .filter(url => url !== "");
+}
+
+// FORM SUBMIT
+async function handleFormSubmit() {
+
+    if (!token) {
+        alert("Please login to add hotel");
+window.location.href = "/login";
+        return;
+    }
+
+    const name = document.getElementById('name').value.trim();
+    const location = document.getElementById('location').value.trim();
+    const pricesValue = document.getElementById('prices').value;
+    const imagesInput = document.getElementById('images').value;
+    const isVegValue = document.getElementById('is_veg').value;
+
+    if (!name) return alert("Hotel name required");
+    if (!pricesValue) return alert("Price required");
+
+    const imagesArray = parseImages(imagesInput);
+
+    const data = {
+        name,
+        location,
+        prices: parseInt(pricesValue),
+        is_veg: isVegValue === 'true',
+        images: imagesArray
+    };
+
+    try {
+
+        if (currentEditId !== null) {
+            await axios.put(`${API_URL}/${currentEditId}`, data, authHeader);
+        } else {
+            await axios.post(API_URL, data, authHeader);
+        }
+
+        resetForm();
+        fetchHotels();
+
+    } catch (error) {
+        console.log(error.response?.data);
+        alert("Backend Error");
+    }
+}
+
+// EDIT
+function setupEdit(hotel) {
+
+    currentEditId = hotel.id;
+
+    document.getElementById('name').value = hotel.name || "";
+    document.getElementById('location').value = hotel.location || "";
+    document.getElementById('prices').value = hotel.prices || hotel.price || "";
+    document.getElementById('is_veg').value = (hotel.is_veg ?? true).toString();
+
+    try {
+        const imgs = typeof hotel.images === "string"
+            ? JSON.parse(hotel.images)
+            : hotel.images;
+
+        document.getElementById('images').value = imgs ? imgs.join('\n') : '';
+    } catch {
+        document.getElementById('images').value = '';
+    }
+
+    document.getElementById('submitBtn').innerText = "💾 Update Hotel Details";
+    document.getElementById('hotelForm').classList.add('edit-mode-active');
+    document.getElementById('cancelBtn').style.display = "block";
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// RESET
+function resetForm() {
+
+    currentEditId = null;
+
+    document.getElementById('name').value = "";
+    document.getElementById('location').value = "";
+    document.getElementById('prices').value = "";
+    document.getElementById('images').value = "";
+    document.getElementById('is_veg').value = "true";
+
+    document.getElementById('submitBtn').innerText = "✨ Add New Hotel";
+    document.getElementById('hotelForm').classList.remove('edit-mode-active');
+    document.getElementById('cancelBtn').style.display = "none";
+}
+
+
+// SEARCH FILTER
+function filterHotels() {
+
+    const searchValue = document
+        .getElementById("searchInput")
+        .value
+        .toLowerCase();
+
+    const filtered = allHotels.filter(hotel => {
+
+        const name = hotel.name ? hotel.name.toLowerCase() : "";
+        const location = hotel.location ? hotel.location.toLowerCase() : "";
+
+        return name.includes(searchValue) || location.includes(searchValue);
+
+    });
+
+    renderHotels(filtered);
+}
+
+function logoutUser(){
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("username");
+
+    window.location.reload();
+}
+
+</script>

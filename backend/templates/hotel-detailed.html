@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hotel Details | LuxeStay</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+:root { --primary: #ed1c24; --bg: #f8f8f8; --text: #1c1c1c; }
+
+*{
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background: var(--bg);
+    margin: 0;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* ================= IMAGE GALLERY FIX ================= */
+
+.hero-section {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    height: 400px;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.hero-section > div,
+.hero-section > img {
+    overflow: hidden;   /* 🔥 prevents layout breaking */
+}
+
+.main-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 12px 0 0 12px;
+    display: block;
+}
+
+.side-imgs {
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    gap: 10px;
+}
+
+.side-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+}
+
+/* Rounded corners correctly */
+.side-img:first-child {
+    border-radius: 0 12px 0 0;
+}
+.side-img:last-child {
+    border-radius: 0 0 12px 0;
+}
+
+/* ================= INFO SECTION ================= */
+
+.header-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.title-area h1 { margin: 0; font-size: 2.5rem; }
+.title-area p { margin: 5px 0; }
+.dietary { font-weight: 600; }
+
+.rating-badge {
+    background: #24963f;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.price-info {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+/* ================= TABS ================= */
+
+.tabs {
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    gap: 30px;
+    margin-bottom: 20px;
+}
+
+.tab {
+    padding: 10px 0;
+    cursor: pointer;
+    color: #696969;
+    font-weight: 600;
+    border-bottom: 3px solid transparent;
+}
+
+.tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+.content-card {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    display: none;
+}
+
+.content-card.active {
+    display: block;
+}
+
+/* ================= REVIEWS ================= */
+
+.review-item {
+    border-bottom: 1px solid #eee;
+    padding: 15px 0;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    background: #ddd;
+    border-radius: 50%;
+}
+
+.review-rating {
+    background: #24963f;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+/* ================= PHOTO TAB FIX ================= */
+
+#photo-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+#photo-gallery img {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 4 / 3;  /* 🔥 forces same shape */
+    object-fit: cover;
+    object-position: center;
+    border-radius: 12px;
+    display: block;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="hero-section">
+        <img id="hotel-img-main" src="" class="main-img">
+        <div class="side-imgs">
+            <img id="side-img-1" class="side-img">
+            <img id="side-img-2" class="side-img">
+        </div>
+    </div>
+
+    <div class="header-box">
+        <div class="title-area">
+            <h1 id="hotel-name">Loading...</h1>
+            <p id="hotel-location"></p>
+            <p id="hotel-dietary" class="dietary"></p>
+        </div>
+        <div class="rating-badge">
+            <span id="avg-rating">0.0</span> ★
+        </div>
+    </div>
+
+    <div class="price-info">
+        Cost for night: <span id="hotel-price">₹0</span>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" data-tab="overview">Overview</div>
+        <div class="tab" data-tab="reviews">Reviews</div>
+        <div class="tab" data-tab="menu">Menu</div>
+        <div class="tab" data-tab="photos">Photos</div>
+    </div>
+
+    <div id="overview" class="content-card active">
+        <h3>About this place</h3>
+        <p id="hotel-desc"></p>
+        <hr>
+        <h4>Contact</h4>
+        <p id="hotel-contact"></p>
+    </div>
+
+    <div id="reviews" class="content-card">
+        <h3>Reviews</h3>
+        <div id="reviews-list"></div>
+    </div>
+
+    <div id="menu" class="content-card">
+        <h3>Menu</h3>
+        <p>Menu coming soon...</p>
+    </div>
+
+    <div id="photos" class="content-card">
+        <h3>Photos</h3>
+        <div id="photo-gallery"></div>
+    </div>
+
+</div>
+<script>
+const API_BASE = 'http://127.0.0.1:5000/api/hotels';
+const token = localStorage.getItem("token");
+
+// Guests can view
+// Only restrict actions later
+
+const authHeader = {
+    headers: {
+        Authorization: "Bearer " + token
+    }
+};
+
+const pathParts = window.location.pathname.split("/");
+const hotelId = pathParts[pathParts.length - 1] || pathParts[pathParts.length - 2];
+
+// TAB SWITCHING
+document.querySelectorAll(".tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        document.querySelectorAll(".content-card").forEach(c => c.classList.remove("active"));
+
+        tab.classList.add("active");
+        document.getElementById(tab.dataset.tab).classList.add("active");
+    });
+});
+
+// 1. FIXED HELPER FUNCTION
+function getImageSrc(img) {
+    if (!img || typeof img !== 'string') return null;
+    let cleanImg = img.trim();
+    
+    // If it's a base64 or a web URL, return it as is
+    if (cleanImg.startsWith("data:image") || cleanImg.startsWith("http")) {
+        return cleanImg;
+    }
+    return null;
+}
+
+// 2. UPDATED LOAD DETAILS FUNCTION
+async function loadDetails() {
+    if (!hotelId) {
+        alert("Hotel ID missing in URL");
+        return;
+    }
+
+    try {
+        const res = await axios.get(`${API_BASE}/${hotelId}/full`, authHeader);
+        const { hotel, reviews } = res.data;
+
+        // --- BASIC DETAILS ---
+        document.getElementById('hotel-name').innerText = hotel.name;
+        document.getElementById('hotel-location').innerText = hotel.location ? "📍 " + hotel.location : "Location not provided";
+        
+        const dietary = document.getElementById('hotel-dietary');
+        if (hotel.is_veg) {
+            dietary.innerText = "🌿 Pure Veg";
+            dietary.style.color = "green";
+        } else {
+            dietary.innerText = "🍖 Non-Veg Available";
+            dietary.style.color = "red";
+        }
+
+        document.getElementById('hotel-price').innerText = `₹${hotel.prices}`;
+        document.getElementById('hotel-desc').innerText = hotel.description || "Welcome to " + hotel.name;
+        document.getElementById('hotel-contact').innerText = hotel.contact_no || "Not provided";
+        document.getElementById('avg-rating').innerText = hotel.average_rating || 0;
+
+        // --- IMAGE LOGIC ---
+        const defaultImg = "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800";
+        
+        // Use the array directly from the model fix
+        let images = Array.isArray(hotel.images) ? hotel.images : [];
+        
+        // Remove empty or broken strings
+        images = images.filter(img => img && img.length > 5);
+
+        if (images.length === 0) {
+            images = [defaultImg];
+        }
+
+        // Set Main + Side Images
+        document.getElementById("hotel-img-main").src = getImageSrc(images[0]) || defaultImg;
+        document.getElementById("side-img-1").src = getImageSrc(images[1]) || getImageSrc(images[0]) || defaultImg;
+        document.getElementById("side-img-2").src = getImageSrc(images[2]) || getImageSrc(images[0]) || defaultImg;
+
+        // Populate Photo Gallery Tab
+        const gallery = document.getElementById("photo-gallery");
+        gallery.innerHTML = "";
+        images.forEach(imgSrc => {
+            const url = getImageSrc(imgSrc);
+            if (url) {
+                const img = document.createElement("img");
+                img.src = url;
+                img.onerror = function() { this.src = defaultImg; };
+                gallery.appendChild(img);
+            }
+        });
+
+        // --- REVIEWS ---
+        const rList = document.getElementById('reviews-list');
+        if (!reviews || reviews.length === 0) {
+            rList.innerHTML = "<p>No reviews yet.</p>";
+        } else {
+            rList.innerHTML = reviews.map(r => `
+                <div class="review-item">
+                    <div class="user-info">
+                        <div class="avatar"></div>
+                        <strong>${r.username}</strong>
+                        <span class="review-rating">${r.rating} ★</span>
+                    </div>
+                    <p>${r.comment || ''}</p>
+                </div>
+            `).join('');
+        }
+
+    } catch (err) {
+        console.error("Hotel Load Error:", err);
+        alert("Error loading hotel details.");
+    }
+}
+
+// Initialize
+loadDetails();
+</script>
