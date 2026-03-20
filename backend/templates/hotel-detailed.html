@@ -180,6 +180,16 @@ body {
     border-radius: 12px;
     display: block;
 }
+.menu-category h4 {
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    margin-top: 20px;
+}
+
+#menu-sections div div:last-child {
+    border-bottom: none; /* Remove last border */
+}
 
 </style>
 </head>
@@ -227,21 +237,61 @@ body {
     </div>
 
     <div id="reviews" class="content-card">
-        <h3>Reviews</h3>
-        <div id="reviews-list"></div>
+    <h3>Reviews</h3>
+
+    <button onclick="openReviewsPage()" 
+    style="margin-bottom:15px;padding:8px 14px;border:none;background:#ed1c24;color:white;border-radius:6px;cursor:pointer;">
+        Write Review
+    </button>
+
+    <div id="reviews-list"></div>
+</div>
+
+<div id="menu" class="content-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="margin: 0;">Hotel Menu</h3>
+        <span id="menu-dietary-tag" style="padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold;"></span>
     </div>
 
-    <div id="menu" class="content-card">
-        <h3>Menu</h3>
-        <p>Menu coming soon...</p>
+    <div id="upload-section-container" style="display: none; background: #f0f0f0; padding: 20px; border-radius: 12px; text-align: center; border: 2px dashed #ccc; margin-bottom: 25px;">
+        <p style="margin-bottom: 10px; font-weight: 600;">Upload Digital Menu Card</p>
+        <input type="file" id="menu-upload-input" accept="image/*" style="display: none;">
+        <button onclick="document.getElementById('menu-upload-input').click()" 
+                style="padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer;">
+            Choose Menu Image
+        </button>
+        <p id="upload-status" style="font-size: 0.8rem; color: #666; margin-top: 10px;">Supported: JPG, PNG, WebP</p>
     </div>
+
+    <div id="menu-card-display" style="display: none; margin-bottom: 30px; text-align: center;">
+        <h4 style="margin-bottom: 15px; text-align: left;">Digital Menu Card:</h4>
+        <img id="uploaded-menu-img" src="" style="max-width: 400px; width: 100%; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border: 1px solid #ddd;">
+    </div>
+
+    <div id="menu-sections">
+        <div class="menu-category">
+            <h4>Starters</h4>
+            <div id="starters-list"></div>
+        </div>
+        <div class="menu-category">
+            <h4>Main Course</h4>
+            <div id="main-course-list"></div>
+        </div>
+        <div class="menu-category">
+            <h4>Chef's Gallery</h4>
+            <div id="photo-menu-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px;"></div>
+        </div>
+        <div class="menu-category">
+            <h4>Desserts & Drinks</h4>
+            <div id="desserts-list"></div>
+        </div>
+    </div>
+</div>
 
     <div id="photos" class="content-card">
         <h3>Photos</h3>
         <div id="photo-gallery"></div>
     </div>
-
-</div>
 <script>
 const API_BASE = 'http://127.0.0.1:5000/api/hotels';
 const token = localStorage.getItem("token");
@@ -291,8 +341,140 @@ async function loadDetails() {
     try {
         const res = await axios.get(`${API_BASE}/${hotelId}/full`, authHeader);
         const { hotel, reviews } = res.data;
+// --- 1. DEFINE ELEMENTS FIRST (To fix the ReferenceError) ---
+        const uploadContainer = document.getElementById('upload-section-container');
+        const menuDisplay = document.getElementById('menu-card-display');
+        const menuUploadInput = document.getElementById('menu-upload-input');
+        const uploadedMenuImg = document.getElementById('uploaded-menu-img');
+        const statusText = document.getElementById('upload-status');
 
-        // --- BASIC DETAILS ---
+        // --- SHOW SAVED MENU CARD ---
+        if (hotel.description && hotel.description.startsWith("data:image")) {
+            uploadedMenuImg.src = hotel.description;
+            menuDisplay.style.display = "block";
+        }
+
+        // --- ACCESS CONTROL (Upload Box) ---
+        if (token) {
+            uploadContainer.style.display = "block";
+        } else {
+            uploadContainer.style.display = "none";
+        }
+
+        // --- MENU LOGIC ---
+        const menuDietary = document.getElementById('menu-dietary-tag');
+        const startersContainer = document.getElementById('starters-list');
+        const mainContainer = document.getElementById('main-course-list');
+        const dessertsContainer = document.getElementById('desserts-list');
+
+        // Set Dietary Tag in Menu
+        if (hotel.is_veg) {
+            menuDietary.innerText = "PURE VEG MENU";
+            menuDietary.style.background = "rgba(0, 128, 0, 0.1)";
+            menuDietary.style.color = "green";
+        } else {
+            menuDietary.innerText = "NON-VEG MENU";
+            menuDietary.style.background = "rgba(255, 0, 0, 0.1)";
+            menuDietary.style.color = "red";
+        }
+
+        // Define Menu Items based on Type
+        const menuData = hotel.is_veg ? {
+            starters: [
+                { name: "Paneer Tikka", price: 250, desc: "Grilled cottage cheese with spices" },
+                { name: "Crispy Corn", price: 180, desc: "Deep fried corn with peppers" }
+            ],
+            main: [
+                { name: "Dal Makhani", price: 320, desc: "Creamy black lentils slow-cooked" },
+                { name: "Shahi Paneer", price: 380, desc: "Rich tomato and cashew gravy" }
+            ]
+        } : {
+            starters: [
+                { name: "Chicken 65", price: 300, desc: "Spicy deep-fried chicken bites" },
+                { name: "Fish Amritsari", price: 350, desc: "Gram flour coated fried fish" }
+            ],
+            main: [
+                { name: "Butter Chicken", price: 450, desc: "Classic tandoori chicken in tomato gravy" },
+                { name: "Mutton Rogan Josh", price: 550, desc: "Traditional Kashmiri lamb curry" }
+            ]
+        };
+
+        const desserts = [
+            { name: "Gulab Jamun", price: 120, desc: "Sweet milk solids in syrup" },
+            { name: "Chocolate Brownie", price: 220, desc: "Served with vanilla ice cream" }
+        ];
+
+        // Helper function to render items
+        const renderMenuItems = (items, container) => {
+            container.innerHTML = items.map(item => `
+                <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #ddd;">
+                    <div>
+                        <div style="font-weight: 600;">${item.name}</div>
+                        <div style="font-size: 0.8rem; color: #666;">${item.desc}</div>
+                    </div>
+                    <div style="font-weight: bold; color: var(--text);">₹${item.price}</div>
+                </div>
+            `).join('');
+        };
+
+        renderMenuItems(menuData.starters, startersContainer);
+        renderMenuItems(menuData.main, mainContainer);
+        renderMenuItems(desserts, dessertsContainer);
+
+        // --- PHOTO MENU LOGIC ---
+        const photoMenuGrid = document.getElementById('photo-menu-grid');
+        
+        const foodImages = hotel.is_veg 
+            ? [
+                "https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&q=80",
+                "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400&q=80",
+                "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80"
+              ]
+            : [
+                "https://images.unsplash.com/photo-1588166524941-3bf61a9c41db?w=400&q=80",
+                "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=400&q=80",
+                "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=400&q=80"
+              ];
+
+        photoMenuGrid.innerHTML = foodImages.map(url => `
+            <div style="border-radius: 8px; overflow: hidden; height: 120px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                <img src="${url}" style="width: 100%; height: 100%; object-fit: cover;" alt="Menu Item">
+            </div>
+        `).join('');
+
+        // --- 2. MENU UPLOAD & AUTO-SAVE LOGIC ---
+        if (menuUploadInput) {
+            menuUploadInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    statusText.innerText = "Uploading to server...";
+                    statusText.style.color = "blue";
+
+                    reader.onload = async function(event) {
+                        const base64Image = event.target.result;
+                        
+                        try {
+                            await axios.put(`${API_BASE}/${hotelId}`, {
+                                description: base64Image 
+                            }, authHeader);
+
+                            uploadedMenuImg.src = base64Image;
+                            menuDisplay.style.display = "block"; 
+                            statusText.innerText = "Menu Saved Permanently!";
+                            statusText.style.color = "green";
+                        } catch (err) {
+                            console.error("Save Error:", err);
+                            statusText.innerText = "Error saving to server.";
+                            statusText.style.color = "red";
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+// --- BASIC DETAILS (FIXED) ---
         document.getElementById('hotel-name').innerText = hotel.name;
         document.getElementById('hotel-location').innerText = hotel.location ? "📍 " + hotel.location : "Location not provided";
         
@@ -305,11 +487,33 @@ async function loadDetails() {
             dietary.style.color = "red";
         }
 
-        document.getElementById('hotel-price').innerText = `₹${hotel.prices}`;
-        document.getElementById('hotel-desc').innerText = hotel.description || "Welcome to " + hotel.name;
-        document.getElementById('hotel-contact').innerText = hotel.contact_no || "Not provided";
+        // 1. FIXED: Show "Welcome" message instead of image code in Description
+        const descriptionBox = document.getElementById('hotel-desc');
+        if (hotel.description && hotel.description.startsWith("data:image")) {
+            // If the description is actually an image, show a default welcome text
+            descriptionBox.innerText = "Welcome to " + hotel.name + ". We provide premium luxury and world-class hospitality in " + (hotel.location || "your city") + ". Experience a stay like never before.";
+        } else {
+            // Otherwise show the actual text description
+            descriptionBox.innerText = hotel.description || "Welcome to " + hotel.name;
+        }
+
+        // 2. NEW: Automatic Contact Details based on Hotel Name
+        const hotelEmail = hotel.name.toLowerCase().replace(/\s+/g, '') + "@gmail.com";
+        const hotelPhone = hotel.contact_no || "+91 98" + Math.floor(10000000 + Math.random() * 90000000); // Random if empty
+        
+        document.getElementById('hotel-contact').innerHTML = `
+            <strong>Phone:</strong> ${hotelPhone}<br>
+            <strong>Email:</strong> ${hotelEmail}<br>
+            <strong>Inquiry:</strong> Support available 24/7
+        `;
+
+        // Price and Rating
+        const hotelPrice = hotel.prices || hotel.price || 0;
+        document.getElementById('hotel-price').innerText = `₹${hotelPrice.toLocaleString()}`;
         document.getElementById('avg-rating').innerText = hotel.average_rating || 0;
 
+
+        
         // --- IMAGE LOGIC ---
         const defaultImg = "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800";
         
@@ -364,6 +568,9 @@ async function loadDetails() {
     }
 }
 
+function openReviewsPage(){
+    window.location.href = `/reviews?hotel_id=${hotelId}`;
+}
 // Initialize
 loadDetails();
 </script>

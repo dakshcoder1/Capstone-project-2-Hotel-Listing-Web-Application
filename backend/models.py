@@ -15,6 +15,7 @@ class Hotel(db.Model):
     description = db.Column(db.Text)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     is_admin = db.Column(db.Boolean, default=False)
+    menu_card = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     reviews = db.relationship(
@@ -62,6 +63,7 @@ class Hotel(db.Model):
             "contact_no": self.contact_no,
             "description": self.description,
             "user_id": self.user_id,
+            "menu_card": self.menu_card,
             "is_admin": self.is_admin,
             "created_at": self.created_at.isoformat() if self.created_at else None
         }

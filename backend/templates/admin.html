@@ -101,7 +101,7 @@
     <nav>
         <a class="navbar-brand" href="/">✨ LuxeStay Admin</a>
         <div class="nav-links">
-            <a class="nav-link" href="/dashboard">Dashboard</a>
+           
             <a class="nav-link" href="#" onclick="logout()" style="color: #ef4444;">Logout</a>
         </div>
     </nav>
@@ -231,9 +231,10 @@ const user = {
                 tbody.innerHTML = '<tr><td colspan="7" class="text-center">No users found</td></tr>';
                 return;
             }
-            tbody.innerHTML = data.users.map(u => `
+            // Use (u, index) to get the position in the list
+            tbody.innerHTML = data.users.map((u, index) => `
                 <tr>
-                    <td>#${u.id}</td>
+                    <td>${index + 1}</td> 
                     <td style="font-weight: 600;">${escapeHtml(u.username)}</td>
                     <td>${escapeHtml(u.email)}</td>
                     <td>${u.is_admin ? '<span class="badge bg-danger">Admin</span>' : '<span class="badge bg-secondary">User</span>'}</td>
@@ -241,9 +242,9 @@ const user = {
                     <td>${new Date(u.created_at).toLocaleDateString()}</td>
                     <td>
                         ${u.id === user.id
-    ? '<span style="color:#4ade80;font-weight:600;">You</span>'
-    : `<button class="btn-delete" onclick="deleteUser(${u.id}, '${escapeHtml(u.username)}')">Delete</button>`
-}
+                            ? '<span style="color:#4ade80;font-weight:600;">You</span>'
+                            : `<button class="btn-delete" onclick="deleteUser(${u.id}, '${escapeHtml(u.username)}')">Delete</button>`
+                        }
                     </td>
                 </tr>
             `).join('');
@@ -257,16 +258,17 @@ const user = {
                 tbody.innerHTML = '<tr><td colspan="5" class="text-center">No hotels found</td></tr>';
                 return;
             }
-            tbody.innerHTML = data.hotels.map(h => `
+           // Use (h, index) to get the position in the list
+            tbody.innerHTML = data.hotels.map((h, index) => `
                 <tr>
-                    <td>#${h.id}</td>
+                    <td>${index + 1}</td>
                     <td>${escapeHtml(h.username || "Unknown")}</td>
                     <td style="color: var(--secondary); font-weight: 600;">${escapeHtml(h.name)}</td>
                     <td>📍 ${escapeHtml(h.location)}</td>
-<td style="color: #4ade80; font-weight: 700;">₹${h.price || h.prices}</td>
+                    <td style="color: #4ade80; font-weight: 700;">₹${h.price || h.prices}</td>
                 </tr>
             `).join('');
-        }
+             }
 
         async function deleteUser(userId, username) {
             if (!confirm(`Permanently delete user "${username}" and all their data?`)) return;

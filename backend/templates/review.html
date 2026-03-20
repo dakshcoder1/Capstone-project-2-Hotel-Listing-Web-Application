@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Reviews | LuxeStay</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #a855f7;
+            --bg: #0f172a;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --text: #f8fafc;
+            --accent: #4ade80;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+        body {
+            background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            perspective: 1000px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            animation: entrance 0.8s ease-out;
+        }
+
+        @keyframes entrance {
+            from { opacity: 0; transform: translateZ(-100px) translateY(20px); }
+            to { opacity: 1; transform: translateZ(0) translateY(0); }
+        }
+
+        h2, h3 {
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 25px;
+            font-weight: 600;
+        }
+
+        /* --- 3D Review Cards --- */
+        #reviews {
+            margin-bottom: 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .review-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(15px);
+            padding: 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+        }
+
+        .review-card:hover {
+            transform: translateZ(20px) scale(1.02);
+            border-color: var(--primary);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+        }
+
+        .review-card b { color: var(--secondary); font-size: 1.1rem; }
+        .review-card span.stars { color: #fbbf24; margin-left: 10px; }
+        .review-card p { margin-top: 10px; opacity: 0.8; line-height: 1.6; }
+
+        /* --- Input Styling --- */
+        .form-box {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 30px;
+            border-radius: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 14px 18px;
+            margin-bottom: 15px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(15, 23, 42, 0.6);
+            color: white;
+            font-size: 0.95rem;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus, textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        textarea { min-height: 120px; resize: vertical; }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: 0.4s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            filter: brightness(1.1);
+            box-shadow: 0 10px 25px rgba(168, 85, 247, 0.4);
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2>Hotel Experience</h2>
+
+    <div id="reviews">
+        </div>
+
+    <div class="form-box">
+        <h3>Share Your Thoughts</h3>
+        
+        <input id="username" placeholder="Enter your display name">
+        
+        <input id="rating" type="number" min="1" max="5" placeholder="Rating (1 to 5)">
+        
+        <textarea id="comment" placeholder="Describe your stay at this property..."></textarea>
+        
+        <button onclick="addReview()">✨ Submit Experience</button>
+    </div>
+
+</div>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const hotelId = urlParams.get("hotel_id");
+    const token = localStorage.getItem("token");
+
+    // --- NEW: ACCESS CONTROL FOR GUESTS ---
+    document.addEventListener("DOMContentLoaded", () => {
+        const formBox = document.querySelector(".form-box"); // Ensure your form has this class
+        if (!token && formBox) {
+            formBox.innerHTML = `
+                <div style="text-align:center; padding: 20px; background: rgba(237, 28, 36, 0.1); border-radius: 15px; border: 1px dashed var(--primary);">
+                    <h3 style="color: white; margin-bottom: 10px;">Want to share your experience?</h3>
+                    <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 15px;">Login is required to write a review for this hotel.</p>
+                    <button onclick="window.location.href='/login'" style="width: auto; padding: 10px 25px;">Login Now</button>
+                </div>
+            `;
+        }
+    });
+
+    async function loadReviews(){
+        // Note: For guests, the Authorization header will be "Bearer null"
+        // Ensure your backend allows GET requests for reviews without a token!
+        const res = await fetch(`/api/hotels/${hotelId}/reviews`,{
+            headers:{ Authorization: "Bearer " + token }
+        });
+
+        const data = await res.json();
+        const container = document.getElementById("reviews");
+        container.innerHTML = "";
+
+        // Check if data.reviews exists (fixes previous crash)
+        if(!data.reviews || data.reviews.length === 0) {
+            container.innerHTML = "<p style='text-align:center; opacity:0.5;'>No reviews yet. Be the first!</p>";
+            return;
+        }
+
+        data.reviews.forEach((r, index)=>{
+            const card = document.createElement("div");
+            card.className = "review-card";
+            card.style.animationDelay = (index * 0.1) + "s";
+            card.innerHTML = `
+                <b>${r.username}</b>
+                <span class="stars">${"★".repeat(r.rating)}${"☆".repeat(5-r.rating)}</span>
+                <p>${r.comment || "No comment provided."}</p>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    async function addReview(){
+        // --- NEW: SAFETY CHECK ---
+        if (!token) {
+            alert("Login is required to post a review!");
+            window.location.href = "/login";
+            return;
+        }
+
+        const username = document.getElementById("username").value;
+        const rating = document.getElementById("rating").value;
+        const comment = document.getElementById("comment").value;
+
+        if(!username || !rating) {
+            alert("Name and Rating are required!");
+            return;
+        }
+
+        const res = await fetch(`/api/hotels/${hotelId}/reviews`,{
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: "Bearer " + token
+            },
+            body: JSON.stringify({ username, rating, comment })
+        });
+
+        if (res.ok) {
+            document.getElementById("username").value = "";
+            document.getElementById("rating").value = "";
+            document.getElementById("comment").value = "";
+            loadReviews();
+        } else {
+            const errData = await res.json();
+            alert(errData.error || "Failed to post review");
+        }
+    }
+
+    loadReviews();
+</script>

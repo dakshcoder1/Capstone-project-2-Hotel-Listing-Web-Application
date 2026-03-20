@@ -124,6 +124,10 @@ def login_page():
 def admin_page():
     return render_template('admin.html')
 
+@app.route("/reviews")
+def review_page():
+    return render_template("review.html")
+
 
 @app.route("/hotel/<int:id>")
 def hotel_detail(id):
@@ -292,6 +296,9 @@ def update_hotel(id):
         return jsonify({"msg": "Not allowed"}), 403
 
     data = request.get_json()
+
+    if 'menu_card' in data:
+        hotel.menu_card = data['menu_card']
 
     hotel.name = data.get('name', hotel.name)
     hotel.location = data.get('location', hotel.location)
